@@ -506,7 +506,7 @@ async def on_niche_answer(message: Message, state: FSMContext):
     await state.update_data(got_ai_recommendation=True, niche=niche)
     await state.set_state(None)
 
-    await message.answer(ai_response, parse_mode="Markdown")
+    await message.answer(ai_response)
     await _after_ai_response(message, state, paid=False)
 
 

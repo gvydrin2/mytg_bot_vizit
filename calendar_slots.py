@@ -1,10 +1,12 @@
 """
 Google Calendar: свободные слоты (FreeBusy) и создание встречи при записи.
 Календарь gvydrin2@gmail.com должен быть расшарен на сервисный аккаунт
-с правом вносить изменения — тогда слот занимается автоматически.
+с правом вносить изменения — тогда слот занимает автоматически.
 """
 
 from datetime import date, datetime, time, timedelta
+import json
+import os
 from zoneinfo import ZoneInfo
 
 from google.oauth2.service_account import Credentials
@@ -37,10 +39,21 @@ def _tz() -> ZoneInfo:
 def _get_service():
     if not GOOGLE_CALENDAR_ID:
         raise ValueError("GOOGLE_CALENDAR_ID не задан в .env")
-    creds = Credentials.from_service_account_file(
-        GOOGLE_CREDENTIALS_PATH,
-        scopes=_SCOPES,
-    )
+        
+    # Сначала пытаемся прочитать JSON-строку из переменных окружения (для Railway)
+    service_account_info = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+    
+    if service_account_info:
+        # Если переменная на хостинге заполнена, авторизуемся через неё из памяти
+        info = json.loads(service_account_info)
+        creds = Credentials.from_service_account_info(info, scopes=_SCOPES)
+    else:
+        # Если переменной нет, читаем локальный файл на ПК
+        creds = Credentials.from_service_account_file(
+            GOOGLE_CREDENTIALS_PATH,
+            scopes=_SCOPES,
+        )
+        
     return build("calendar", "v3", credentials=creds, cache_discovery=False)
 
 

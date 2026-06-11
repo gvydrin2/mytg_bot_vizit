@@ -3,6 +3,8 @@ CRM на Google Sheets.
 """
 
 from datetime import datetime
+import json
+import os
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -19,10 +21,20 @@ def _get_worksheet():
     if not GOOGLE_SHEETS_ID:
         raise ValueError("GOOGLE_SHEETS_ID не задан в .env")
 
-    creds = Credentials.from_service_account_file(
-        GOOGLE_CREDENTIALS_PATH,
-        scopes=_SCOPES,
-    )
+    # Сначала пытаемся прочитать JSON-строку из переменных окружения (для Railway)
+    service_account_info = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")
+
+    if service_account_info:
+        # Если переменная на хостинге заполнена, авторизуемся через неё из памяти
+        info = json.loads(service_account_info)
+        creds = Credentials.from_service_account_info(info, scopes=_SCOPES)
+    else:
+        # Если переменной нет, читаем локальный файл на ПК
+        creds = Credentials.from_service_account_file(
+            GOOGLE_CREDENTIALS_PATH,
+            scopes=_SCOPES,
+        )
+
     client = gspread.authorize(creds)
     try:
         worksheet = client.open_by_key(GOOGLE_SHEETS_ID).sheet1
